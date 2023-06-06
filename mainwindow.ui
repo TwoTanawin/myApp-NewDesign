@@ -17,6 +17,18 @@
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
      <widget class="QFrame" name="frame">
+      <property name="minimumSize">
+       <size>
+        <width>474</width>
+        <height>230</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>1421</width>
+        <height>688</height>
+       </size>
+      </property>
       <property name="frameShape">
        <enum>QFrame::StyledPanel</enum>
       </property>
@@ -29,7 +41,22 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout" stretch="8,2">
            <item>
-            <widget class="QLabel" name="label">
+            <widget class="QLabel" name="label_cam">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>320</width>
+               <height>180</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>960</width>
+               <height>540</height>
+              </size>
+             </property>
              <property name="frameShape">
               <enum>QFrame::Box</enum>
              </property>
@@ -256,7 +283,11 @@
               </widget>
              </item>
              <item row="0" column="0">
-              <widget class="QLineEdit" name="lineEdit"/>
+              <widget class="QLineEdit" name="lineEdit">
+               <property name="text">
+                <string>rtsp://root:pass@192.168.10.73/axis-media/media.amp?videocodec=h264</string>
+               </property>
+              </widget>
              </item>
              <item row="1" column="0">
               <widget class="QLineEdit" name="lineEdit_2"/>

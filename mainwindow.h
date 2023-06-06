@@ -15,7 +15,20 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+private slots:
+    void on_pushButton_3_clicked();
+
+    void on_pushButton_4_clicked();
+
+    void closeEvent(QCloseEvent *event);
+
 private:
     Ui::MainWindow *ui;
+
+    // Convert string to Qstring
+    QString string_to_qstring(const std::string& str);
+
+    // Convert Qstring to string
+    std::string qstringToString(const QString& qstr);
 };
 #endif // MAINWINDOW_H
