@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1440</width>
-    <height>749</height>
+    <height>750</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -113,6 +113,7 @@ font-size:18px;
 font-size:20px;
 font-weight:bold;
 }
+
 </string>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -121,8 +122,8 @@ font-weight:bold;
      <widget class="QFrame" name="frame">
       <property name="minimumSize">
        <size>
-        <width>474</width>
-        <height>230</height>
+        <width>710</width>
+        <height>710</height>
        </size>
       </property>
       <property name="maximumSize">

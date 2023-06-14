@@ -46,3 +46,6 @@ LIBS += C:\opencv\build\install\x64\mingw\lib\libopencv_videoio470.dll.a
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    resourec.qrc

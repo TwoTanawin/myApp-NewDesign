@@ -96,6 +96,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     getConfigfile();
+
+
 }
 
 MainWindow::~MainWindow()
@@ -232,23 +234,13 @@ void MainWindow::readHAROI(){
     fs.open("ROI_ha.roi", cv::FileStorage::READ);
     if (!fs.isOpened())
     {
-//        QMessageBox::critical(nullptr, "Error", "Config file not found.");
-
-        ui->lineEdit_ha->setText("");
-
+        ui->lineEdit_ip->setText("");
     }
-    else{
-        fs["ProcessingRegion0"] >> buffProcessingRegion0;
+    fs["ProcessingRegion0"] >> buffProcessingRegion0;
 
-        //    std::cout << "mROI: " << mROI << std::endl;
-        ui->lineEdit_ip->setText(string_to_qstring(matToString(buffProcessingRegion0)));
-        fs.release();
-    }
-//    fs["ProcessingRegion0"] >> buffProcessingRegion0;
-
-//    //    std::cout << "mROI: " << mROI << std::endl;
-//    ui->lineEdit_ha->setText(string_to_qstring(matToString(buffProcessingRegion0)));
-//    fs.release();
+    //    std::cout << "mROI: " << mROI << std::endl;
+    ui->lineEdit_ha->setText(string_to_qstring(matToString(buffProcessingRegion0)));
+    fs.release();
 }
 
 void MainWindow::readIPROI(){
@@ -704,52 +696,60 @@ void MainWindow::closeEvent(QCloseEvent *event){
 
 void MainWindow::on_btn_start_cam_clicked()
 {
-    // Set thread4Running to true
-    thread4Running = true;
-
-    // Open IP camera using RTSP protocol
-    videoCapture.open(qstringToString(ui->lineEdit->text()));
-
-    // Check if the camera is opened successfully
-    if (!videoCapture.isOpened())
-    {
-        std::cout << "Error: Could not open camera!" << std::endl;
-        return;
+    if(ui->lineEdit->text().isEmpty()){
+        QMessageBox::critical(nullptr, "Error", "Please setup IP camera.");
     }
+    else{
+        //    ui->textBrowser->append("Connecting ......");
+        // Set thread4Running to true
+        thread4Running = true;
 
-    // Start camera thread
-    cam_thread = std::thread([&]() {
-        while (thread4Running) {
-            cv::Mat frame;
-            videoCapture >> frame;
 
-            // Add the frame to the buffer
-            myArrayBuffer.append(frame);
-            myArrayBuffer.resize(10);
-            if (myArrayBuffer.size() == 5){
-                myArrayBuffer.clear();
-            }
-            else{
-                myArrayBuffer.append(frame);
-            }
+        // Open IP camera using RTSP protocol
+        videoCapture.open(qstringToString(ui->lineEdit->text()));
 
-            // Convert OpenCV Mat to Qt QImage
-            QImage qImg = QImage(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888);
-            qImg = qImg.rgbSwapped();
-
-            // Resize the QImage to the label size
-            qImg = qImg.scaled(ui->label_cam->size(), Qt::KeepAspectRatio);
-
-            // Display the QImage on the label
-            ui->label_cam->setPixmap(QPixmap::fromImage(qImg));
-            ui->label_cam->setAlignment(Qt::AlignCenter);
-            ui->label_cam->update();
+        // Check if the camera is opened successfully
+        if (!videoCapture.isOpened())
+        {
+//            std::cout << "Error: Could not open camera!" << std::endl;
+//            return;
+            QMessageBox::critical(nullptr, "Error", "Could not open camera.");
         }
-    });
 
-    ui->btn_start_cam->setEnabled(false);
+        // Start camera thread
+        cam_thread = std::thread([&]() {
+            while (thread4Running) {
+                cv::Mat frame;
+                videoCapture >> frame;
 
-    ui->textBrowser->append("Camera is connected.");
+                // Add the frame to the buffer
+                myArrayBuffer.append(frame);
+                myArrayBuffer.resize(10);
+                if (myArrayBuffer.size() == 5){
+                    myArrayBuffer.clear();
+                }
+                else{
+                    myArrayBuffer.append(frame);
+                }
+
+                // Convert OpenCV Mat to Qt QImage
+                QImage qImg = QImage(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888);
+                qImg = qImg.rgbSwapped();
+
+                // Resize the QImage to the label size
+                qImg = qImg.scaled(ui->label_cam->size(), Qt::KeepAspectRatio);
+
+                // Display the QImage on the label
+                ui->label_cam->setPixmap(QPixmap::fromImage(qImg));
+                ui->label_cam->setAlignment(Qt::AlignCenter);
+                ui->label_cam->update();
+            }
+        });
+
+        ui->btn_start_cam->setEnabled(false);
+
+        ui->textBrowser->append("Camera is connected.");
+    }
 }
 
 
@@ -771,14 +771,15 @@ void MainWindow::on_btn_stop_cam_clicked()
 
 void MainWindow::on_btn_output_path_clicked()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), "", tr("Files (*.*)"));
+//    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), "", tr("Files (*.*)"));
+    QString folderPath = QFileDialog::getExistingDirectory(this, tr("Select Folder"), QDir::homePath());
     QSettings settings("QtAICenter.ini",QSettings::Format::IniFormat);
-    if (!fileName.isEmpty()) {
-        QFileInfo fileInfo(fileName);
-        QString filePath = fileInfo.absolutePath();
-        ui->lineEdit_2->setText(filePath);
-        settings.setValue("Sigle_Value_2",filePath);
-    }
+//    if (!fileName.isEmpty()) {
+//        QFileInfo fileInfo(fileName);
+//        QString filePath = fileInfo.absolutePath();
+        ui->lineEdit_2->setText(folderPath);
+        settings.setValue("Sigle_Value_2",folderPath);
+//    }
 
     ui->textBrowser->append("Output path was set");
 }
@@ -1693,79 +1694,126 @@ void MainWindow::drawWWROI(){
 
 void MainWindow::on_btn_draw_buff_ta_clicked()
 {
+    QString ProcessingRegion0 = ui->lineEdit_ProcessingRegion0->text();
+    QString VehicleDetectionRegion0 = ui->lineEdit_VehicleDetectionRegion0->text();
+    QString RegionWithCountingLines0 = ui->lineEdit_RegionWithCountingLines0->text();
+    QString RegionForLane0 = ui->lineEdit_RegionForLane0->text();
+    QString RegionForLane1 = ui->lineEdit_RegionForLane1->text();
+    QString RegionForLane2 = ui->lineEdit_RegionForLane2->text();
+
     if(myArrayBuffer.empty() == true){
         QMessageBox::critical(nullptr, "Error", "Image is empty please click start.");
     }
     else{
-        cv::Mat coordinates_ProcessingRegion0 = convertQStringToMat(ui->lineEdit_ProcessingRegion0->text());
-
-        cv::Mat coordinates_VehicleDetectionRegion0 = convertQStringToMat(ui->lineEdit_VehicleDetectionRegion0->text());
-
-        cv::Mat coordinates_RegionWithCountingLines0 = convertQStringToMat(ui->lineEdit_RegionWithCountingLines0->text());
-
-        cv::Mat coordinates_RegionForLane0 = convertQStringToMat(ui->lineEdit_RegionForLane0->text());
-
-        cv::Mat coordinates_RegionForLane1 = convertQStringToMat(ui->lineEdit_RegionForLane1->text());
-
-        cv::Mat coordinates_RegionForLane2 = convertQStringToMat(ui->lineEdit_RegionForLane2->text());
-
-        // Print the cv::Mat
-        std::cout << coordinates_ProcessingRegion0 << std::endl;
-        std::cout << "-----------------------------" << std::endl;
-
-        std::cout << coordinates_VehicleDetectionRegion0 << std::endl;
-        std::cout << "-----------------------------" << std::endl;
-
-        std::cout << coordinates_RegionWithCountingLines0 << std::endl;
-        std::cout << "-----------------------------" << std::endl;
-
-        std::cout << coordinates_RegionForLane0 << std::endl;
-        std::cout << "-----------------------------" << std::endl;
-
-        std::cout << coordinates_RegionForLane1 << std::endl;
-        std::cout << "-----------------------------" << std::endl;
-
-        std::cout << coordinates_RegionForLane2 << std::endl;
-        std::cout << "-----------------------------" << std::endl;
-
-        //    if(){
-
-        //    }
-
-        cv::FileStorage fs1("ROI_ta_use.roi", cv::FileStorage::WRITE);
-        //    fs1.open("XX_ta_Buff_new.roi", cv::FileStorage::READ);
-        if (!fs1.isOpened())
-        {
-            QMessageBox::critical(nullptr, "Error", "Config file not found.");
+        if(ui->lineEdit_2->text().isEmpty()){
+            QMessageBox::critical(nullptr, "Error", "Please setup output path.");
         }
-        fs1 << "numProcessingRegion" << 1;
-        fs1 << "ProcessingRegion0"<< coordinates_ProcessingRegion0;
-        //    ui->lineEdit_ProcessingRegion0->setText(string_to_qstring(matToString(mROI0)));
+        else if(ProcessingRegion0.isEmpty() or VehicleDetectionRegion0.isEmpty() or RegionWithCountingLines0.isEmpty() or RegionForLane0.isEmpty() or RegionForLane1.isEmpty() or RegionForLane2.isEmpty()){
+            QMessageBox::critical(nullptr, "Error", "TA's value is not complete. Please fill the value.");
+        }
+        else{
+            cv::Mat coordinates_ProcessingRegion0 = convertQStringToMat(ui->lineEdit_ProcessingRegion0->text());
 
-        fs1 << "numProcessingRegion" << 1;
-        fs1 << "VehicleDetectionRegion0" << coordinates_VehicleDetectionRegion0;
-        //    ui->lineEdit_VehicleDetectionRegion0->setText(string_to_qstring(matToString(mROI1)));
+            cv::Mat coordinates_VehicleDetectionRegion0 = convertQStringToMat(ui->lineEdit_VehicleDetectionRegion0->text());
 
-        fs1 << "numProcessingRegion" << 1;
-        fs1 << "RegionWithCountingLines0" << coordinates_RegionWithCountingLines0;
-        //    ui->lineEdit_RegionWithCountingLines0->setText(string_to_qstring(matToString(mROI2)));
+            cv::Mat coordinates_RegionWithCountingLines0 = convertQStringToMat(ui->lineEdit_RegionWithCountingLines0->text());
+
+            cv::Mat coordinates_RegionForLane0 = convertQStringToMat(ui->lineEdit_RegionForLane0->text());
+
+            cv::Mat coordinates_RegionForLane1 = convertQStringToMat(ui->lineEdit_RegionForLane1->text());
+
+            cv::Mat coordinates_RegionForLane2 = convertQStringToMat(ui->lineEdit_RegionForLane2->text());
+
+            // Print the cv::Mat
+            std::cout << coordinates_ProcessingRegion0 << std::endl;
+            std::cout << "-----------------------------" << std::endl;
+
+            std::cout << coordinates_VehicleDetectionRegion0 << std::endl;
+            std::cout << "-----------------------------" << std::endl;
+
+            std::cout << coordinates_RegionWithCountingLines0 << std::endl;
+            std::cout << "-----------------------------" << std::endl;
+
+            std::cout << coordinates_RegionForLane0 << std::endl;
+            std::cout << "-----------------------------" << std::endl;
+
+            std::cout << coordinates_RegionForLane1 << std::endl;
+            std::cout << "-----------------------------" << std::endl;
+
+            std::cout << coordinates_RegionForLane2 << std::endl;
+            std::cout << "-----------------------------" << std::endl;
+
+            //    if(){
+
+            //    }
+
+            cv::FileStorage fs1("ROI_ta_use.roi", cv::FileStorage::WRITE);
+            //    fs1.open("XX_ta_Buff_new.roi", cv::FileStorage::READ);
+            if (!fs1.isOpened())
+            {
+                QMessageBox::critical(nullptr, "Error", "Config file not found.");
+            }
+            fs1 << "numProcessingRegion" << 1;
+            fs1 << "ProcessingRegion0"<< coordinates_ProcessingRegion0;
+            //    ui->lineEdit_ProcessingRegion0->setText(string_to_qstring(matToString(mROI0)));
+
+            fs1 << "numProcessingRegion" << 1;
+            fs1 << "VehicleDetectionRegion0" << coordinates_VehicleDetectionRegion0;
+            //    ui->lineEdit_VehicleDetectionRegion0->setText(string_to_qstring(matToString(mROI1)));
+
+            fs1 << "numProcessingRegion" << 1;
+            fs1 << "RegionWithCountingLines0" << coordinates_RegionWithCountingLines0;
+            //    ui->lineEdit_RegionWithCountingLines0->setText(string_to_qstring(matToString(mROI2)));
 
 
-        fs1 << "numRegionForLane" << 3;
-        fs1 << "RegionForLane0" << coordinates_RegionForLane0;
-        //    ui->lineEdit_RegionForLane0->setText(string_to_qstring(matToString(mROI3)));
+            fs1 << "numRegionForLane" << 3;
+            fs1 << "RegionForLane0" << coordinates_RegionForLane0;
+            //    ui->lineEdit_RegionForLane0->setText(string_to_qstring(matToString(mROI3)));
 
-        // this value
-        fs1 << "RegionForLane1"<< coordinates_RegionForLane1;
-        //    ui->lineEdit_RegionForLane1->setText(string_to_qstring(matToString(mROI4)));
+            // this value
+            fs1 << "RegionForLane1"<< coordinates_RegionForLane1;
+            //    ui->lineEdit_RegionForLane1->setText(string_to_qstring(matToString(mROI4)));
 
 
-        fs1 << "RegionForLane2" << coordinates_RegionForLane2;
-        //    ui->lineEdit_RegionForLane2->setText(string_to_qstring(matToString(refPtMat_RegionForLane2)));
+            fs1 << "RegionForLane2" << coordinates_RegionForLane2;
+            //    ui->lineEdit_RegionForLane2->setText(string_to_qstring(matToString(refPtMat_RegionForLane2)));
 
-        fs1.release();
+            cv::FileStorage fs2(qstringToString(ui->lineEdit_2->text()+"/"+"ROI_ta_use.roi"), cv::FileStorage::WRITE);
+            //    fs1.open("XX_ta_Buff_new.roi", cv::FileStorage::READ);
+            if (!fs2.isOpened())
+            {
+                QMessageBox::critical(nullptr, "Error", "Config file not found.");
+            }
+            fs2 << "numProcessingRegion" << 1;
+            fs2 << "ProcessingRegion0"<< coordinates_ProcessingRegion0;
+            //    ui->lineEdit_ProcessingRegion0->setText(string_to_qstring(matToString(mROI0)));
 
-        drawTAROI();
+            fs1 << "numProcessingRegion" << 1;
+            fs1 << "VehicleDetectionRegion0" << coordinates_VehicleDetectionRegion0;
+            //    ui->lineEdit_VehicleDetectionRegion0->setText(string_to_qstring(matToString(mROI1)));
+
+            fs2 << "numProcessingRegion" << 1;
+            fs2 << "RegionWithCountingLines0" << coordinates_RegionWithCountingLines0;
+            //    ui->lineEdit_RegionWithCountingLines0->setText(string_to_qstring(matToString(mROI2)));
+
+
+            fs2 << "numRegionForLane" << 3;
+            fs2 << "RegionForLane0" << coordinates_RegionForLane0;
+            //    ui->lineEdit_RegionForLane0->setText(string_to_qstring(matToString(mROI3)));
+
+            // this value
+            fs2 << "RegionForLane1"<< coordinates_RegionForLane1;
+            //    ui->lineEdit_RegionForLane1->setText(string_to_qstring(matToString(mROI4)));
+
+
+            fs2 << "RegionForLane2" << coordinates_RegionForLane2;
+            //    ui->lineEdit_RegionForLane2->setText(string_to_qstring(matToString(refPtMat_RegionForLane2)));
+
+            fs1.release();
+            fs2.release();
+
+            drawTAROI();
+        }
     }
 }
 
@@ -2395,42 +2443,54 @@ void MainWindow::on_btn_get_oringin_ha_clicked()
 
 void MainWindow::on_btn_draw_ha_clicked()
 {
+    QString ha_roi = ui->lineEdit_ha->text();
+
     if(myArrayBuffer.empty() == true){
         QMessageBox::critical(nullptr, "Error", "Image is empty please click start.");
     }
     else{
-        cv::Mat coordinates_ha = convertQStringToMat(ui->lineEdit_ha->text());
-
-        cv::FileStorage fs1("ROI_ha.roi", cv::FileStorage::WRITE);
-        // fs1.open("XX_ta_Buff_new.roi", cv::FileStorage::READ);
-        if (!fs1.isOpened()) {
-            std::cerr << "Config file not found." << std::endl;
-            QMessageBox::critical(nullptr, "Error", "Config file not found.");
+        if(ui->lineEdit_2->text().isEmpty()){
+            QMessageBox::critical(nullptr, "Error", "Please setup output path.");
         }
+        else if(ha_roi.isEmpty()){
+            QMessageBox::critical(nullptr, "Error", "WW's value is not complete. Please fill the value.");
+        }
+        else{
+            cv::Mat coordinates_ha = convertQStringToMat(ui->lineEdit_ha->text());
 
-        fs1 << "numProcessingRegion" << 1;
-        fs1 << "ProcessingRegion0" << coordinates_ha;
+            cv::FileStorage fs1("ROI_ha.roi", cv::FileStorage::WRITE);
+            // fs1.open("XX_ta_Buff_new.roi", cv::FileStorage::READ);
+            if (!fs1.isOpened()) {
+                std::cerr << "Config file not found." << std::endl;
+                QMessageBox::critical(nullptr, "Error", "Config file not found.");
+            }
 
-        fs1.release();
+            fs1 << "numProcessingRegion" << 1;
+            fs1 << "ProcessingRegion0" << coordinates_ha;
 
-        drawHAROI();
+
+            cv::FileStorage fs2(qstringToString(ui->lineEdit_2->text())+"/"+"ROI_ha.roi", cv::FileStorage::WRITE);
+            // fs1.open("XX_ta_Buff_new.roi", cv::FileStorage::READ);
+            if (!fs2.isOpened()) {
+                std::cerr << "Config file not found." << std::endl;
+                QMessageBox::critical(nullptr, "Error", "Config file not found.");
+            }
+
+            fs2 << "numProcessingRegion" << 1;
+            fs2 << "ProcessingRegion0" << coordinates_ha;
+
+            fs1.release();
+
+            fs2.release();
+
+            drawWWROI();
+        }
     }
 }
 
 
 void MainWindow::on_btn_set_ha_roi_clicked()
 {
-//    cv::FileStorage fs("ROI_ha.roi", cv::FileStorage::WRITE);
-
-//    cv::Mat processingRegion(5, 2, CV_32F);
-//    float processingRegionData[] = {459.0f, 235.0f, 1238.0f, 199.0f, 1915.0f, 609.0f, 1916.0f, 1078.0f, 537.0f, 1078.0f};
-//    memcpy(processingRegion.data, processingRegionData, sizeof(processingRegionData));
-//    fs << "numProcessingRegion" << 1;
-//    fs << "ProcessingRegion0" << processingRegion;
-//    ui->lineEdit_ha->setText(string_to_qstring(matToString(processingRegion)));
-
-//    fs.release();
-
 
     QString myPath = ui->lineEdit_get_origin_ha->text();
     cv::Mat mROI0;
@@ -2528,25 +2588,47 @@ void MainWindow::on_btn_get_oringin_ip_clicked()
 
 void MainWindow::on_btn_draw_ip_clicked()
 {
+    QString ip_roi = ui->lineEdit_ip->text();
+
     if(myArrayBuffer.empty() == true){
         QMessageBox::critical(nullptr, "Error", "Image is empty please click start.");
     }
     else{
-        cv::Mat coordinates_ip = convertQStringToMat(ui->lineEdit_ip->text());
-
-        cv::FileStorage fs1("ROI_ip.roi", cv::FileStorage::WRITE);
-        // fs1.open("XX_ta_Buff_new.roi", cv::FileStorage::READ);
-        if (!fs1.isOpened()) {
-            std::cerr << "Config file not found." << std::endl;
-            QMessageBox::critical(nullptr, "Error", "Config file not found.");
+        if(ui->lineEdit_2->text().isEmpty()){
+            QMessageBox::critical(nullptr, "Error", "Please setup output path.");
         }
+        else if(ip_roi.isEmpty()){
+            QMessageBox::critical(nullptr, "Error", "IP's value is not complete. Please fill the value.");
+        }
+        else{
+            cv::Mat coordinates_ip = convertQStringToMat(ui->lineEdit_ip->text());
 
-        fs1 << "numProcessingRegion" << 1;
-        fs1 << "ProcessingRegion0" << coordinates_ip;
+            cv::FileStorage fs1(qstringToString(ui->lineEdit_2->text())+"/"+"ROI_ip.roi", cv::FileStorage::WRITE);
+            // fs1.open("XX_ta_Buff_new.roi", cv::FileStorage::READ);
+            if (!fs1.isOpened()) {
+                std::cerr << "Config file not found." << std::endl;
+                QMessageBox::critical(nullptr, "Error", "Config file not found.");
+            }
 
-        fs1.release();
+            fs1 << "numProcessingRegion" << 1;
+            fs1 << "ProcessingRegion0" << coordinates_ip;
 
-        drawIPROI();
+            cv::FileStorage fs2("ROI_ip.roi", cv::FileStorage::WRITE);
+            // fs1.open("XX_ta_Buff_new.roi", cv::FileStorage::READ);
+            if (!fs2.isOpened()) {
+                std::cerr << "Config file not found." << std::endl;
+                QMessageBox::critical(nullptr, "Error", "Config file not found.");
+            }
+
+            fs2 << "numProcessingRegion" << 1;
+            fs2 << "ProcessingRegion0" << coordinates_ip;
+
+            fs1.release();
+
+            fs2.release();
+
+            drawIPROI();
+        }
     }
 }
 
@@ -2660,25 +2742,47 @@ void MainWindow::on_btn_get_oringin_ww_clicked()
 
 void MainWindow::on_btn_draw_ww_clicked()
 {
+    QString ww_roi = ui->lineEdit_ww->text();
+
     if(myArrayBuffer.empty() == true){
         QMessageBox::critical(nullptr, "Error", "Image is empty please click start.");
     }
     else{
-        cv::Mat coordinates_ww = convertQStringToMat(ui->lineEdit_ww->text());
-
-        cv::FileStorage fs1("ROI_ww.roi", cv::FileStorage::WRITE);
-        // fs1.open("XX_ta_Buff_new.roi", cv::FileStorage::READ);
-        if (!fs1.isOpened()) {
-            std::cerr << "Config file not found." << std::endl;
-            QMessageBox::critical(nullptr, "Error", "Config file not found.");
+        if(ui->lineEdit_2->text().isEmpty()){
+          QMessageBox::critical(nullptr, "Error", "Please setup output path.");
         }
+        else if(ww_roi.isEmpty()){
+            QMessageBox::critical(nullptr, "Error", "WW's value is not complete. Please fill the value.");
+        }
+        else{
+            cv::Mat coordinates_ww = convertQStringToMat(ui->lineEdit_ww->text());
 
-        fs1 << "numProcessingRegion" << 1;
-        fs1 << "ProcessingRegion0" << coordinates_ww;
+            cv::FileStorage fs1("ROI_ww.roi", cv::FileStorage::WRITE);
+            // fs1.open("XX_ta_Buff_new.roi", cv::FileStorage::READ);
+            if (!fs1.isOpened()) {
+                std::cerr << "Config file not found." << std::endl;
+                QMessageBox::critical(nullptr, "Error", "Config file not found.");
+            }
 
-        fs1.release();
+            fs1 << "numProcessingRegion" << 1;
+            fs1 << "ProcessingRegion0" << coordinates_ww;
 
-        drawWWROI();
+            cv::FileStorage fs2(qstringToString(ui->lineEdit_2->text())+"/"+"ROI_ww.roi", cv::FileStorage::WRITE);
+            // fs1.open("XX_ta_Buff_new.roi", cv::FileStorage::READ);
+            if (!fs2.isOpened()) {
+                std::cerr << "Config file not found." << std::endl;
+                QMessageBox::critical(nullptr, "Error", "Config file not found.");
+            }
+
+            fs2 << "numProcessingRegion" << 1;
+            fs2 << "ProcessingRegion0" << coordinates_ww;
+
+            fs1.release();
+
+            fs2.release();
+
+            drawWWROI();
+        }
     }
 }
 
@@ -2758,7 +2862,7 @@ void MainWindow::on_btn_save_img_clicked()
         on_btn_draw_ip_clicked();
         on_btn_draw_ww_clicked();
 
-        ui->textBrowser->append("----TA HA IP WW images were save----");
+//        ui->textBrowser->append("----TA HA IP WW images were save----");
     }
 }
 

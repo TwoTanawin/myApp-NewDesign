@@ -1,0 +1,30 @@
+%YAML:1.0
+---
+numProcessingRegion: 1
+ProcessingRegion0: !!opencv-matrix
+   rows: 4
+   cols: 2
+   dt: i
+   data: [ 403, 254, 619, 988, 1598, 964, 796, 316 ]
+numProcessingRegion: 1
+RegionWithCountingLines0: !!opencv-matrix
+   rows: 4
+   cols: 2
+   dt: i
+   data: [ 431, 448, 1198, 312, 433, 481, 1230, 333 ]
+numRegionForLane: 3
+RegionForLane0: !!opencv-matrix
+   rows: 4
+   cols: 2
+   dt: i
+   data: [ 1915, 646, 1643, 1071, 696, 33, 911, 32 ]
+RegionForLane1: !!opencv-matrix
+   rows: 4
+   cols: 2
+   dt: i
+   data: [ 1645, 1072, 1118, 1068, 578, 33, 703, 33 ]
+RegionForLane2: !!opencv-matrix
+   rows: 4
+   cols: 2
+   dt: i
+   data: [ 1122, 1068, 432, 1073, 433, 34, 582, 33 ]

@@ -1,0 +1,8 @@
+%YAML:1.0
+---
+numProcessingRegion: 1
+ProcessingRegion0: !!opencv-matrix
+   rows: 5
+   cols: 2
+   dt: i
+   data: [ 427, 244, 590, 1027, 1704, 1003, 1224, 561, 734, 292 ]
